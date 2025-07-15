@@ -1,2 +1,30 @@
+# Project documentation (keep local only)
 problemstatement.txt
 breakdown.txt
+
+# Compiled object files
+*.o
+*.obj
+
+# Executables
+atm
+*.exe
+*.out
+
+# Temporary files
+*~
+*.tmp
+*.temp
+*_records.txt
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Data backup files
+*.bak
