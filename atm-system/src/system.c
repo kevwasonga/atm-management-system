@@ -188,3 +188,139 @@ void checkAllAccounts(struct User u)
     fclose(pf);
     success(u);
 }
+
+// Validate phone number (7-15 digits, numbers only)
+int isValidPhone(const char *phoneNumber) {
+    int length = strlen(phoneNumber);
+    if (length < 7 || length > 15) {
+        return 0;
+    }
+
+    for (int i = 0; i < length; i++) {
+        if (phoneNumber[i] < '0' || phoneNumber[i] > '9') {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// Update account information (country or phone number)
+void updateAccountInfo(struct User currentUser) {
+    int accountNumber;
+    int fieldChoice;
+    char newValue[100];
+    struct Record record;
+    char userName[100];
+    int accountFound = 0;
+
+    system("clear");
+    printf("\t\t\t===== Update Account Information =====\n");
+
+    // First, show user's accounts
+    printf("\nYour accounts:\n");
+    FILE *displayFile = fopen(RECORDS, "r");
+    if (displayFile) {
+        while (getAccountFromFile(displayFile, userName, &record)) {
+            if (strcmp(userName, currentUser.name) == 0) {
+                printf("Account Number: %d | Country: %s | Phone: %d\n",
+                       record.accountNbr, record.country, record.phone);
+            }
+        }
+        fclose(displayFile);
+    }
+
+    printf("\nEnter the account number you want to update: ");
+    scanf("%d", &accountNumber);
+
+    // Check if account exists and belongs to user
+    FILE *checkFile = fopen(RECORDS, "r");
+    if (!checkFile) {
+        printf("✖ Error: Could not open records file!\n");
+        stayOrReturn(0, updateAccountInfo, currentUser);
+        return;
+    }
+
+    while (getAccountFromFile(checkFile, userName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(userName, currentUser.name) == 0) {
+            accountFound = 1;
+            break;
+        }
+    }
+    fclose(checkFile);
+
+    if (!accountFound) {
+        printf("✖ Account number %d not found or doesn't belong to you!\n", accountNumber);
+        stayOrReturn(0, updateAccountInfo, currentUser);
+        return;
+    }
+
+    printf("\nWhat would you like to update?\n");
+    printf("[1] Country\n");
+    printf("[2] Phone Number\n");
+    printf("Enter your choice: ");
+    scanf("%d", &fieldChoice);
+
+    if (fieldChoice == 1) {
+        printf("Enter new country: ");
+        scanf("%s", newValue);
+
+        if (strlen(newValue) == 0) {
+            printf("✖ Country cannot be empty!\n");
+            stayOrReturn(0, updateAccountInfo, currentUser);
+            return;
+        }
+    } else if (fieldChoice == 2) {
+        printf("Enter new phone number: ");
+        scanf("%s", newValue);
+
+        if (!isValidPhone(newValue)) {
+            printf("✖ Invalid phone number! Must be 7-15 digits only.\n");
+            stayOrReturn(0, updateAccountInfo, currentUser);
+            return;
+        }
+    } else {
+        printf("✖ Invalid choice!\n");
+        stayOrReturn(0, updateAccountInfo, currentUser);
+        return;
+    }
+
+    // Update the record in file
+    FILE *originalFile = fopen(RECORDS, "r");
+    FILE *tempFile = fopen("./data/temp_records.txt", "w");
+
+    if (!originalFile || !tempFile) {
+        printf("✖ Error: Could not open files for updating!\n");
+        if (originalFile) fclose(originalFile);
+        if (tempFile) fclose(tempFile);
+        stayOrReturn(0, updateAccountInfo, currentUser);
+        return;
+    }
+
+    // Copy all records, updating the target record
+    while (getAccountFromFile(originalFile, userName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(userName, currentUser.name) == 0) {
+            // Update the specific field
+            if (fieldChoice == 1) {
+                strcpy(record.country, newValue);
+            } else if (fieldChoice == 2) {
+                record.phone = atoi(newValue);
+            }
+        }
+
+        // Write record to temp file
+        fprintf(tempFile, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+                record.id, record.userId, userName, record.accountNbr,
+                record.deposit.month, record.deposit.day, record.deposit.year,
+                record.country, record.phone, record.amount, record.accountType);
+    }
+
+    fclose(originalFile);
+    fclose(tempFile);
+
+    // Replace original file with updated file
+    remove(RECORDS);
+    rename("./data/temp_records.txt", RECORDS);
+
+    printf("✔ Account information updated successfully!\n");
+    success(currentUser);
+}
