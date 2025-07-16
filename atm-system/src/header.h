@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern char *USERS;
+
 struct Date
 {
     int month, day, year;
@@ -42,4 +44,5 @@ void updateAccountInfo(struct User u);
 void checkAccountDetails(struct User u);
 void makeTransaction(struct User u);
 void removeAccount(struct User u);
+void transferOwnership(struct User u);
 int isValidPhone(const char *phoneNumber);

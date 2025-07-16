@@ -853,3 +853,223 @@ void makeTransaction(struct User currentUser) {
 
     success(currentUser);
 }
+
+// Get user ID by username from users.txt
+int getUserIdByName(const char* username) {
+    FILE *file = fopen(USERS, "r");
+    if (!file) return -1;
+
+    struct User user;
+    while (fscanf(file, "%d %s %s", &user.id, user.name, user.password) == 3) {
+        if (strcmp(user.name, username) == 0) {
+            fclose(file);
+            return user.id;
+        }
+    }
+
+    fclose(file);
+    return -1;
+}
+
+// Validate target user exists and is different from current user
+int isValidTargetUser(const char* targetUsername, const char* currentUsername) {
+    // Check if trying to transfer to self
+    if (strcmp(targetUsername, currentUsername) == 0) {
+        return 0;
+    }
+
+    // Check if target user exists
+    return (getUserIdByName(targetUsername) != -1);
+}
+
+// Display transfer confirmation details
+void displayTransferConfirmation(struct Record record, const char* currentOwner, const char* newOwner) {
+    printf("\n=============== Confirm Account Transfer ===============\n\n");
+    printf("Account Number: %d\n", record.accountNbr);
+    printf("Account Type: %s\n", record.accountType);
+    printf("Current Balance: $%.2f\n", record.amount);
+    printf("Country: %s\n", record.country);
+    printf("Phone: %d\n", record.phone);
+    printf("Current Owner: %s\n", currentOwner);
+    printf("New Owner: %s\n", newOwner);
+    printf("\n⚠️  WARNING: This will permanently transfer ownership!\n");
+}
+
+// Get confirmation from user for account transfer
+int confirmTransfer() {
+    char confirmation;
+    printf("\nAre you sure you want to transfer this account? (y/n): ");
+    scanf(" %c", &confirmation);
+
+    if (confirmation == 'y' || confirmation == 'Y') {
+        return 1;
+    } else if (confirmation == 'n' || confirmation == 'N') {
+        return 0;
+    } else {
+        printf("✖ Please enter 'y' for yes or 'n' for no.\n");
+        return confirmTransfer(); // Ask again for valid input
+    }
+}
+
+// Transfer account ownership in file safely using temporary file
+int transferAccountOwnership(int accountNumber, const char* currentOwner, const char* newOwner, int newUserId) {
+    FILE *originalFile = fopen(RECORDS, "r");
+    if (!originalFile) {
+        printf("✖ Error: Could not open records file for transfer!\n");
+        return 0;
+    }
+
+    FILE *tempFile = fopen("./data/temp_records.txt", "w");
+    if (!tempFile) {
+        fclose(originalFile);
+        printf("✖ Error: Could not create temporary file!\n");
+        return 0;
+    }
+
+    struct Record record;
+    char currentUserName[100];
+    int accountFound = 0;
+
+    // Copy all records, updating the target record
+    while (getAccountFromFile(originalFile, currentUserName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(currentUserName, currentOwner) == 0) {
+            accountFound = 1;
+            // Update ownership information
+            record.userId = newUserId;
+            strcpy(currentUserName, newOwner);
+        }
+
+        // Write record to temp file
+        fprintf(tempFile, "%d %d %s %d %d/%d/%d %s %d %.2f %s\n\n",
+                record.id, record.userId, currentUserName, record.accountNbr,
+                record.deposit.month, record.deposit.day, record.deposit.year,
+                record.country, record.phone, record.amount, record.accountType);
+    }
+
+    fclose(originalFile);
+    fclose(tempFile);
+
+    if (!accountFound) {
+        remove("./data/temp_records.txt");
+        return 0;
+    }
+
+    // Replace original file with updated file
+    if (remove(RECORDS) != 0 || rename("./data/temp_records.txt", RECORDS) != 0) {
+        printf("✖ Error: Failed to update records file!\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+// Main transfer ownership function
+void transferOwnership(struct User currentUser) {
+    int accountNumber;
+    char targetUsername[50];
+    struct Record record;
+    char userName[100];
+    int accountFound = 0;
+
+    system("clear");
+    printf("\t\t\t===== Transfer Account Ownership =====\n");
+
+    // Check if user has any accounts
+    int accountCount = countUserAccounts(currentUser);
+    if (accountCount == 0) {
+        printf("\n✖ You have no accounts to transfer!\n");
+        success(currentUser);
+        return;
+    }
+
+    // Display user's accounts available for transfer
+    printf("\nYour accounts available for transfer:\n");
+    FILE *displayFile = fopen(RECORDS, "r");
+    if (displayFile) {
+        printf("Account Number | Type     | Balance\n");
+        printf("-----------------------------------\n");
+        while (getAccountFromFile(displayFile, userName, &record)) {
+            if (strcmp(userName, currentUser.name) == 0) {
+                printf("%-14d | %-8s | $%.2f\n",
+                       record.accountNbr, record.accountType, record.amount);
+            }
+        }
+        fclose(displayFile);
+    }
+
+    printf("\nEnter the account number you want to transfer: ");
+    scanf("%d", &accountNumber);
+
+    // Find and validate the account
+    FILE *checkFile = fopen(RECORDS, "r");
+    if (!checkFile) {
+        printf("✖ Error: Could not open records file!\n");
+        stayOrReturn(0, transferOwnership, currentUser);
+        return;
+    }
+
+    while (getAccountFromFile(checkFile, userName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(userName, currentUser.name) == 0) {
+            accountFound = 1;
+            break;
+        }
+    }
+    fclose(checkFile);
+
+    if (!accountFound) {
+        printf("✖ Account number %d not found or doesn't belong to you!\n", accountNumber);
+        stayOrReturn(0, transferOwnership, currentUser);
+        return;
+    }
+
+    // Get target username
+    printf("\nEnter the username to transfer this account to: ");
+    scanf("%s", targetUsername);
+
+    // Validate target user
+    if (!isValidTargetUser(targetUsername, currentUser.name)) {
+        if (strcmp(targetUsername, currentUser.name) == 0) {
+            printf("✖ Cannot transfer account to yourself!\n");
+        } else {
+            printf("✖ User '%s' does not exist in the system!\n", targetUsername);
+        }
+        stayOrReturn(0, transferOwnership, currentUser);
+        return;
+    }
+
+    // Get target user ID
+    int targetUserId = getUserIdByName(targetUsername);
+    if (targetUserId == -1) {
+        printf("✖ Error: Could not access user database!\n");
+        stayOrReturn(0, transferOwnership, currentUser);
+        return;
+    }
+
+    // Display transfer details for confirmation
+    displayTransferConfirmation(record, currentUser.name, targetUsername);
+
+    // Get user confirmation
+    if (!confirmTransfer()) {
+        printf("\n✖ Account transfer cancelled by user.\n");
+        success(currentUser);
+        return;
+    }
+
+    // Transfer the account ownership
+    if (transferAccountOwnership(accountNumber, currentUser.name, targetUsername, targetUserId)) {
+        system("clear");
+        printf("=============== Account Transfer Successful ===============\n\n");
+        printf("Account Number: %d has been successfully transferred.\n", accountNumber);
+        printf("Previous Owner: %s\n", currentUser.name);
+        printf("New Owner: %s\n", targetUsername);
+
+        int remainingAccounts = countUserAccounts(currentUser);
+        printf("Your remaining accounts: %d\n", remainingAccounts);
+
+        printf("\n===============================================\n");
+        success(currentUser);
+    } else {
+        printf("✖ Failed to transfer account. Please try again.\n");
+        stayOrReturn(0, transferOwnership, currentUser);
+    }
+}

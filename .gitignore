@@ -7,6 +7,8 @@ account_update_testing.txt
 transaction_management_task4.txt
 transaction_management_testing.txt
 remove_account_task5.txt
+transfer_ownership_task6.txt
+transfer_ownership_testing.txt
 
 # Compiled object files
 *.o
