@@ -363,6 +363,190 @@ void updateAccountInfo(struct User currentUser) {
     success(currentUser);
 }
 
+// Count total accounts for a user
+int countUserAccounts(struct User user) {
+    FILE *file = fopen(RECORDS, "r");
+    if (!file) return 0;
+
+    int count = 0;
+    struct Record record;
+    char userName[100];
+
+    while (getAccountFromFile(file, userName, &record)) {
+        if (strcmp(userName, user.name) == 0) {
+            count++;
+        }
+    }
+
+    fclose(file);
+    return count;
+}
+
+// Display account details for confirmation before deletion
+void displayAccountForConfirmation(struct Record record, const char* userName) {
+    printf("\n=============== Confirm Account Deletion ===============\n\n");
+    printf("Account Number: %d\n", record.accountNbr);
+    printf("Account Holder: %s\n", userName);
+    printf("Account Type: %s\n", record.accountType);
+    printf("Current Balance: $%.2f\n", record.amount);
+    printf("Country: %s\n", record.country);
+    printf("Phone: %d\n", record.phone);
+    printf("Deposit Date: %d/%d/%d\n", record.deposit.day, record.deposit.month, record.deposit.year);
+    printf("\n⚠️  WARNING: This action cannot be undone!\n");
+}
+
+// Get confirmation from user for account deletion
+int confirmDeletion() {
+    char confirmation;
+    printf("\nAre you sure you want to delete this account? (y/n): ");
+    scanf(" %c", &confirmation);
+
+    if (confirmation == 'y' || confirmation == 'Y') {
+        return 1;
+    } else if (confirmation == 'n' || confirmation == 'N') {
+        return 0;
+    } else {
+        printf("✖ Please enter 'y' for yes or 'n' for no.\n");
+        return confirmDeletion(); // Ask again for valid input
+    }
+}
+
+// Remove account from file safely using temporary file
+int removeAccountFromFile(int accountNumber, const char* userName) {
+    FILE *originalFile = fopen(RECORDS, "r");
+    if (!originalFile) {
+        printf("✖ Error: Could not open records file for deletion!\n");
+        return 0;
+    }
+
+    FILE *tempFile = fopen("./data/temp_records.txt", "w");
+    if (!tempFile) {
+        fclose(originalFile);
+        printf("✖ Error: Could not create temporary file!\n");
+        return 0;
+    }
+
+    struct Record record;
+    char currentUserName[100];
+    int accountFound = 0;
+
+    // Copy all records except the one to be deleted
+    while (getAccountFromFile(originalFile, currentUserName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(currentUserName, userName) == 0) {
+            accountFound = 1;
+            // Skip this record (don't write to temp file)
+            continue;
+        }
+
+        // Write all other records to temp file
+        fprintf(tempFile, "%d %d %s %d %d/%d/%d %s %d %.2f %s\n\n",
+                record.id, record.userId, currentUserName, record.accountNbr,
+                record.deposit.month, record.deposit.day, record.deposit.year,
+                record.country, record.phone, record.amount, record.accountType);
+    }
+
+    fclose(originalFile);
+    fclose(tempFile);
+
+    if (!accountFound) {
+        remove("./data/temp_records.txt");
+        return 0;
+    }
+
+    // Replace original file with updated file
+    if (remove(RECORDS) != 0 || rename("./data/temp_records.txt", RECORDS) != 0) {
+        printf("✖ Error: Failed to update records file!\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+// Main remove account function
+void removeAccount(struct User currentUser) {
+    int accountNumber;
+    struct Record record;
+    char userName[100];
+    int accountFound = 0;
+
+    system("clear");
+    printf("\t\t\t===== Remove Account =====\n");
+
+    // Check if user has any accounts
+    int accountCount = countUserAccounts(currentUser);
+    if (accountCount == 0) {
+        printf("\n✖ You have no accounts to remove!\n");
+        success(currentUser);
+        return;
+    }
+
+    // Display user's accounts
+    printf("\nYour accounts:\n");
+    FILE *displayFile = fopen(RECORDS, "r");
+    if (displayFile) {
+        printf("Account Number | Type     | Balance\n");
+        printf("-----------------------------------\n");
+        while (getAccountFromFile(displayFile, userName, &record)) {
+            if (strcmp(userName, currentUser.name) == 0) {
+                printf("%-14d | %-8s | $%.2f\n",
+                       record.accountNbr, record.accountType, record.amount);
+            }
+        }
+        fclose(displayFile);
+    }
+
+    printf("\nEnter the account number you want to remove: ");
+    scanf("%d", &accountNumber);
+
+    // Find and validate the account
+    FILE *checkFile = fopen(RECORDS, "r");
+    if (!checkFile) {
+        printf("✖ Error: Could not open records file!\n");
+        stayOrReturn(0, removeAccount, currentUser);
+        return;
+    }
+
+    while (getAccountFromFile(checkFile, userName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(userName, currentUser.name) == 0) {
+            accountFound = 1;
+            break;
+        }
+    }
+    fclose(checkFile);
+
+    if (!accountFound) {
+        printf("✖ Account number %d not found or doesn't belong to you!\n", accountNumber);
+        stayOrReturn(0, removeAccount, currentUser);
+        return;
+    }
+
+    // Display account details for confirmation
+    displayAccountForConfirmation(record, userName);
+
+    // Get user confirmation
+    if (!confirmDeletion()) {
+        printf("\n✖ Account deletion cancelled by user.\n");
+        success(currentUser);
+        return;
+    }
+
+    // Remove the account from file
+    if (removeAccountFromFile(accountNumber, currentUser.name)) {
+        system("clear");
+        printf("=============== Account Deleted Successfully ===============\n\n");
+        printf("Account Number: %d has been permanently removed.\n", accountNumber);
+
+        int remainingAccounts = countUserAccounts(currentUser);
+        printf("Your remaining accounts: %d\n", remainingAccounts);
+
+        printf("\n===============================================\n");
+        success(currentUser);
+    } else {
+        printf("✖ Failed to remove account. Please try again.\n");
+        stayOrReturn(0, removeAccount, currentUser);
+    }
+}
+
 // Calculate monthly interest for savings account (7% annually)
 double calculateSavingsInterest(double balance) {
     return (balance * 0.07) / 12.0;
