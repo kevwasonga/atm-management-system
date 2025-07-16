@@ -509,7 +509,7 @@ void displayTransactionSummary(const char* type, int accountNumber, double amoun
     printf("\n===============================================\n");
 }
 
-// Main transaction function
+// Main transaction function - Task 4: Transaction Management Feature
 void makeTransaction(struct User currentUser) {
     int accountNumber;
     int transactionType;
