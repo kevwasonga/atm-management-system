@@ -9,6 +9,9 @@ transaction_management_testing.txt
 remove_account_task5.txt
 transfer_ownership_task6.txt
 transfer_ownership_testing.txt
+comprehensive_testing_validation.txt
+test_execution_report.txt
+final_validation_report.txt
 
 # Compiled object files
 *.o
