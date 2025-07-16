@@ -5,6 +5,8 @@ account_update.txt
 account_details_task3.txt
 account_update_testing.txt
 transaction_management_task4.txt
+transaction_management_testing.txt
+remove_account_task5.txt
 
 # Compiled object files
 *.o

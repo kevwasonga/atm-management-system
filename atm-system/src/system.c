@@ -482,6 +482,23 @@ void checkAccountDetails(struct User currentUser) {
     success(currentUser);
 }
 
+// Custom error handling for transaction errors (preserves custom error messages)
+void transactionError(void f(struct User u), struct User u) {
+    int option;
+    printf("\nEnter 0 to try again, 1 to return to main menu and 2 to exit:");
+    scanf("%d", &option);
+    if (option == 0)
+        f(u);
+    else if (option == 1)
+        mainMenu(u);
+    else if (option == 2)
+        exit(0);
+    else {
+        printf("Insert a valid operation!\n");
+        transactionError(f, u);
+    }
+}
+
 // Check if transactions are allowed for account type
 int isTransactionAllowed(const char* accountType) {
     return (strcmp(accountType, "saving") == 0 || strcmp(accountType, "current") == 0);
@@ -509,7 +526,7 @@ void displayTransactionSummary(const char* type, int accountNumber, double amoun
     printf("\n===============================================\n");
 }
 
-// Main transaction function - Task 4: Transaction Management Feature
+// Main transaction function : Transaction Management Feature
 void makeTransaction(struct User currentUser) {
     int accountNumber;
     int transactionType;
@@ -566,7 +583,7 @@ void makeTransaction(struct User currentUser) {
     // Check if transactions are allowed for this account type
     if (!isTransactionAllowed(record.accountType)) {
         printf("✖ Transactions not allowed for %s accounts!\n", record.accountType);
-        stayOrReturn(0, makeTransaction, currentUser);
+        transactionError(makeTransaction, currentUser);
         return;
     }
 
@@ -585,7 +602,7 @@ void makeTransaction(struct User currentUser) {
 
     if (transactionType != 1 && transactionType != 2) {
         printf("✖ Invalid transaction type!\n");
-        stayOrReturn(0, makeTransaction, currentUser);
+        transactionError(makeTransaction, currentUser);
         return;
     }
 
@@ -595,7 +612,7 @@ void makeTransaction(struct User currentUser) {
 
     if (!validateTransactionAmount(transactionAmount)) {
         printf("✖ Amount must be positive!\n");
-        stayOrReturn(0, makeTransaction, currentUser);
+        transactionError(makeTransaction, currentUser);
         return;
     }
 
@@ -603,7 +620,7 @@ void makeTransaction(struct User currentUser) {
     if (transactionType == 2 && !hasSufficientBalance(oldBalance, transactionAmount)) {
         printf("✖ Insufficient balance for withdrawal!\n");
         printf("Current balance: $%.2f, Requested amount: $%.2f\n", oldBalance, transactionAmount);
-        stayOrReturn(0, makeTransaction, currentUser);
+        transactionError(makeTransaction, currentUser);
         return;
     }
 
