@@ -481,3 +481,174 @@ void checkAccountDetails(struct User currentUser) {
     printf("\n===============================================\n");
     success(currentUser);
 }
+
+// Check if transactions are allowed for account type
+int isTransactionAllowed(const char* accountType) {
+    return (strcmp(accountType, "saving") == 0 || strcmp(accountType, "current") == 0);
+}
+
+// Validate transaction amount
+int validateTransactionAmount(double amount) {
+    return (amount > 0.0);
+}
+
+// Check if account has sufficient balance for withdrawal
+int hasSufficientBalance(double currentBalance, double withdrawAmount) {
+    return (currentBalance >= withdrawAmount);
+}
+
+// Display transaction summary
+void displayTransactionSummary(const char* type, int accountNumber, double amount, double oldBalance, double newBalance) {
+    system("clear");
+    printf("=============== Transaction Successful ===============\n\n");
+    printf("Transaction Type: %s\n", type);
+    printf("Account Number: %d\n", accountNumber);
+    printf("Amount: $%.2f\n", amount);
+    printf("Previous Balance: $%.2f\n", oldBalance);
+    printf("New Balance: $%.2f\n", newBalance);
+    printf("\n===============================================\n");
+}
+
+// Main transaction function
+void makeTransaction(struct User currentUser) {
+    int accountNumber;
+    int transactionType;
+    double transactionAmount;
+    struct Record record;
+    char userName[100];
+    int accountFound = 0;
+    double oldBalance, newBalance;
+
+    system("clear");
+    printf("\t\t\t===== Make Transaction =====\n");
+
+    // Display user's accounts with balances
+    printf("\nYour accounts:\n");
+    FILE *displayFile = fopen(RECORDS, "r");
+    if (displayFile) {
+        printf("Account Number | Type     | Balance\n");
+        printf("-----------------------------------\n");
+        while (getAccountFromFile(displayFile, userName, &record)) {
+            if (strcmp(userName, currentUser.name) == 0) {
+                printf("%-14d | %-8s | $%.2f\n",
+                       record.accountNbr, record.accountType, record.amount);
+            }
+        }
+        fclose(displayFile);
+    }
+
+    printf("\nEnter the account number for transaction: ");
+    scanf("%d", &accountNumber);
+
+    // Find and validate the account
+    FILE *checkFile = fopen(RECORDS, "r");
+    if (!checkFile) {
+        printf("✖ Error: Could not open records file!\n");
+        stayOrReturn(0, makeTransaction, currentUser);
+        return;
+    }
+
+    while (getAccountFromFile(checkFile, userName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(userName, currentUser.name) == 0) {
+            accountFound = 1;
+            oldBalance = record.amount;
+            break;
+        }
+    }
+    fclose(checkFile);
+
+    if (!accountFound) {
+        printf("✖ Account number %d not found or doesn't belong to you!\n", accountNumber);
+        stayOrReturn(0, makeTransaction, currentUser);
+        return;
+    }
+
+    // Check if transactions are allowed for this account type
+    if (!isTransactionAllowed(record.accountType)) {
+        printf("✖ Transactions not allowed for %s accounts!\n", record.accountType);
+        stayOrReturn(0, makeTransaction, currentUser);
+        return;
+    }
+
+    // Transaction type selection
+    printf("\nSelect transaction type:\n");
+    printf("[1] Deposit\n");
+    printf("[2] Withdrawal\n");
+    printf("[3] Return to main menu\n");
+    printf("Enter your choice: ");
+    scanf("%d", &transactionType);
+
+    if (transactionType == 3) {
+        mainMenu(currentUser);
+        return;
+    }
+
+    if (transactionType != 1 && transactionType != 2) {
+        printf("✖ Invalid transaction type!\n");
+        stayOrReturn(0, makeTransaction, currentUser);
+        return;
+    }
+
+    // Amount input and validation
+    printf("\nEnter transaction amount: $");
+    scanf("%lf", &transactionAmount);
+
+    if (!validateTransactionAmount(transactionAmount)) {
+        printf("✖ Amount must be positive!\n");
+        stayOrReturn(0, makeTransaction, currentUser);
+        return;
+    }
+
+    // Check sufficient balance for withdrawal
+    if (transactionType == 2 && !hasSufficientBalance(oldBalance, transactionAmount)) {
+        printf("✖ Insufficient balance for withdrawal!\n");
+        printf("Current balance: $%.2f, Requested amount: $%.2f\n", oldBalance, transactionAmount);
+        stayOrReturn(0, makeTransaction, currentUser);
+        return;
+    }
+
+    // Calculate new balance
+    if (transactionType == 1) {
+        newBalance = oldBalance + transactionAmount;
+    } else {
+        newBalance = oldBalance - transactionAmount;
+    }
+
+    // Update the record in file using temporary file
+    FILE *originalFile = fopen(RECORDS, "r");
+    FILE *tempFile = fopen("./data/temp_records.txt", "w");
+
+    if (!originalFile || !tempFile) {
+        printf("✖ Error: Could not open files for updating!\n");
+        if (originalFile) fclose(originalFile);
+        if (tempFile) fclose(tempFile);
+        stayOrReturn(0, makeTransaction, currentUser);
+        return;
+    }
+
+    // Copy all records, updating the target record
+    while (getAccountFromFile(originalFile, userName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(userName, currentUser.name) == 0) {
+            record.amount = newBalance;
+        }
+
+        // Write record to temp file
+        fprintf(tempFile, "%d %d %s %d %d/%d/%d %s %d %.2f %s\n\n",
+                record.id, record.userId, userName, record.accountNbr,
+                record.deposit.month, record.deposit.day, record.deposit.year,
+                record.country, record.phone, record.amount, record.accountType);
+    }
+
+    fclose(originalFile);
+    fclose(tempFile);
+
+    // Replace original file with updated file
+    remove(RECORDS);
+    rename("./data/temp_records.txt", RECORDS);
+
+    // Display transaction summary
+    const char* transactionTypeName = (transactionType == 1) ? "Deposit" : "Withdrawal";
+    displayTransactionSummary(transactionTypeName, accountNumber, transactionAmount, oldBalance, newBalance);
+
+    success(currentUser);
+}
