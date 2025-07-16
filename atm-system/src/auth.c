@@ -46,11 +46,12 @@ int isUsernameUnique(const char *username) {
 void loginMenu(char username[50], char password[50])
 {
     system("clear");
-    printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:");
+    printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login\n");
+    printf("\n\t\t\t\tEnter username: ");
     scanf("%s", username);
 
     // Simple password input without terminal manipulation for now
-    printf("\n\n\n\n\n\t\t\t\tEnter the password to login:");
+    printf("\n\t\t\t\tEnter password: ");
     scanf("%s", password);
 };
 
@@ -82,7 +83,8 @@ const char *getPassword(struct User u)
 void registerMenu(char username[50], char password[50])
 {
     system("clear");
-    printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Registration:");
+    printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Registration\n");
+    printf("\n\t\t\t\tEnter username: ");
     scanf("%s", username);
 
     // Check if username is unique
@@ -95,7 +97,7 @@ void registerMenu(char username[50], char password[50])
     }
 
     // Simple password input without terminal manipulation
-    printf("\n\n\n\n\n\t\t\t\tEnter the password:");
+    printf("\n\t\t\t\tEnter password: ");
     scanf("%s", password);
 
     // Save user to file

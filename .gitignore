@@ -1,6 +1,9 @@
 # Project documentation (keep local only)
 problemstatement.txt
 breakdown.txt
+account_update.txt
+account_details_task3.txt
+account_update_testing.txt
 
 # Compiled object files
 *.o

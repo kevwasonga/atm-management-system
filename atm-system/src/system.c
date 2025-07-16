@@ -97,22 +97,27 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
 void success(struct User u)
 {
     int option;
+    system("clear");
     printf("\n✔ Success!\n\n");
 invalid:
     printf("Enter 1 to go to the main menu and 0 to exit!\n");
     scanf("%d", &option);
-    system("clear");
+
     if (option == 1)
     {
+        system("clear");
         mainMenu(u);
     }
     else if (option == 0)
     {
+        system("clear");
         exit(1);
     }
     else
     {
-        printf("Insert a valid operation!\n");
+        system("clear");
+        printf("\n✔ Success!\n\n");
+        printf("✖ Insert a valid operation!\n\n");
         goto invalid;
     }
 }
@@ -133,11 +138,13 @@ noAccount:
     printf("\nEnter the account number:");
     scanf("%d", &r.accountNbr);
 
+    // Check if account number already exists globally (for any user)
+    rewind(pf); // Reset file pointer to beginning
     while (getAccountFromFile(pf, userName, &cr))
     {
-        if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr)
+        if (cr.accountNbr == r.accountNbr)
         {
-            printf("✖ This Account already exists for this user\n\n");
+            printf("✖ Account number %d already exists! Please choose a different account number.\n\n", r.accountNbr);
             goto noAccount;
         }
     }
@@ -147,8 +154,39 @@ noAccount:
     scanf("%d", &r.phone);
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
-    printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
-    scanf("%s", r.accountType);
+
+    int accountTypeChoice;
+    printf("\nChoose the type of account:\n");
+    printf("\t[1] -> saving\n");
+    printf("\t[2] -> current\n");
+    printf("\t[3] -> fixed01 (for 1 year)\n");
+    printf("\t[4] -> fixed02 (for 2 years)\n");
+    printf("\t[5] -> fixed03 (for 3 years)\n");
+    printf("\n\tEnter your choice (1-5): ");
+    scanf("%d", &accountTypeChoice);
+
+    // Convert choice to account type string
+    switch(accountTypeChoice) {
+        case 1:
+            strcpy(r.accountType, "saving");
+            break;
+        case 2:
+            strcpy(r.accountType, "current");
+            break;
+        case 3:
+            strcpy(r.accountType, "fixed01");
+            break;
+        case 4:
+            strcpy(r.accountType, "fixed02");
+            break;
+        case 5:
+            strcpy(r.accountType, "fixed03");
+            break;
+        default:
+            printf("✖ Invalid choice! Defaulting to saving account.\n");
+            strcpy(r.accountType, "saving");
+            break;
+    }
 
     // Set the record ID and user ID
     r.id = getNextRecordId();
@@ -322,5 +360,124 @@ void updateAccountInfo(struct User currentUser) {
     rename("./data/temp_records.txt", RECORDS);
 
     printf("✔ Account information updated successfully!\n");
+    success(currentUser);
+}
+
+// Calculate monthly interest for savings account (7% annually)
+double calculateSavingsInterest(double balance) {
+    return (balance * 0.07) / 12.0;
+}
+
+// Calculate annual interest for fixed accounts
+double calculateFixedInterest(double balance, const char* accountType) {
+    if (strcmp(accountType, "fixed01") == 0) {
+        return balance * 0.04;
+    } else if (strcmp(accountType, "fixed02") == 0) {
+        return balance * 0.05;
+    } else if (strcmp(accountType, "fixed03") == 0) {
+        return balance * 0.08;
+    }
+    return 0.0;
+}
+
+// Calculate maturity date by adding years to deposit date
+void calculateMaturityDate(struct Date depositDate, int years, struct Date* maturityDate) {
+    maturityDate->day = depositDate.day;
+    maturityDate->month = depositDate.month;
+    maturityDate->year = depositDate.year + years;
+}
+
+// Check details of a specific account with interest calculations
+void checkAccountDetails(struct User currentUser) {
+    int accountNumber;
+    struct Record record;
+    char userName[100];
+    int accountFound = 0;
+
+    system("clear");
+    printf("\t\t\t===== Account Details =====\n");
+
+    // First, show user's accounts for easy selection
+    printf("\nYour accounts:\n");
+    FILE *displayFile = fopen(RECORDS, "r");
+    if (displayFile) {
+        printf("Account Number | Type | Balance\n");
+        printf("--------------------------------\n");
+        while (getAccountFromFile(displayFile, userName, &record)) {
+            if (strcmp(userName, currentUser.name) == 0) {
+                printf("%-14d | %-8s | $%.2f\n",
+                       record.accountNbr, record.accountType, record.amount);
+            }
+        }
+        fclose(displayFile);
+    }
+
+    printf("\nEnter the account number you want to check: ");
+    scanf("%d", &accountNumber);
+
+    // Find and validate the account
+    FILE *checkFile = fopen(RECORDS, "r");
+    if (!checkFile) {
+        printf("✖ Error: Could not open records file!\n");
+        stayOrReturn(0, checkAccountDetails, currentUser);
+        return;
+    }
+
+    while (getAccountFromFile(checkFile, userName, &record)) {
+        if (record.accountNbr == accountNumber && strcmp(userName, currentUser.name) == 0) {
+            accountFound = 1;
+            break;
+        }
+    }
+    fclose(checkFile);
+
+    if (!accountFound) {
+        printf("✖ Account number %d not found or doesn't belong to you!\n", accountNumber);
+        stayOrReturn(0, checkAccountDetails, currentUser);
+        return;
+    }
+
+    // Display account details
+    system("clear");
+    printf("=============== Account Details ===============\n\n");
+    printf("Account Number: %d\n", record.accountNbr);
+    printf("Account Holder: %s\n", userName);
+    printf("Deposit Date: %d/%d/%d\n", record.deposit.day, record.deposit.month, record.deposit.year);
+    printf("Country: %s\n", record.country);
+    printf("Phone Number: %d\n", record.phone);
+    printf("Current Balance: $%.2f\n", record.amount);
+    printf("Account Type: %s\n", record.accountType);
+
+    printf("\n=============== Interest Information ===============\n");
+
+    // Calculate and display interest based on account type
+    if (strcmp(record.accountType, "saving") == 0) {
+        double monthlyInterest = calculateSavingsInterest(record.amount);
+        printf("You will get $%.2f as interest on day 10 of every month.\n", monthlyInterest);
+    } else if (strcmp(record.accountType, "fixed01") == 0) {
+        double annualInterest = calculateFixedInterest(record.amount, "fixed01");
+        struct Date maturityDate;
+        calculateMaturityDate(record.deposit, 1, &maturityDate);
+        printf("You will get $%.2f as interest on %d/%d/%d.\n",
+               annualInterest, maturityDate.day, maturityDate.month, maturityDate.year);
+    } else if (strcmp(record.accountType, "fixed02") == 0) {
+        double annualInterest = calculateFixedInterest(record.amount, "fixed02");
+        struct Date maturityDate;
+        calculateMaturityDate(record.deposit, 2, &maturityDate);
+        printf("You will get $%.2f as interest on %d/%d/%d.\n",
+               annualInterest, maturityDate.day, maturityDate.month, maturityDate.year);
+    } else if (strcmp(record.accountType, "fixed03") == 0) {
+        double annualInterest = calculateFixedInterest(record.amount, "fixed03");
+        struct Date maturityDate;
+        calculateMaturityDate(record.deposit, 3, &maturityDate);
+        printf("You will get $%.2f as interest on %d/%d/%d.\n",
+               annualInterest, maturityDate.day, maturityDate.month, maturityDate.year);
+    } else if (strcmp(record.accountType, "current") == 0) {
+        printf("You will not get interests because the account is of type current.\n");
+    } else {
+        printf("Interest calculation not available for account type: %s\n", record.accountType);
+    }
+
+    printf("\n===============================================\n");
     success(currentUser);
 }
