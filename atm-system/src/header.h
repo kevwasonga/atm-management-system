@@ -49,3 +49,4 @@ int isValidPhone(const char *phoneNumber);
 int isValidDate(int month, int day, int year);
 int getValidDate(struct Date *date);
 int getValidInteger(const char *prompt, int minValue, int maxValue);
+double getValidAmount(const char *prompt, double minValue, double maxValue);

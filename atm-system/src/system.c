@@ -174,8 +174,15 @@ noAccount:
         success(u);
         return;
     }
-    printf("\nEnter amount to deposit: $");
-    scanf("%lf", &r.amount);
+    r.amount = getValidAmount("\nEnter amount to deposit: $", 0.01, 999999999.99);
+    if (r.amount == -1.0) {
+        printf("\n✖ Failed to get valid deposit amount. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        fclose(pf);
+        success(u);
+        return;
+    }
 
     int accountTypeChoice;
     printf("\nChoose the type of account:\n");
@@ -389,6 +396,51 @@ int getValidInteger(const char *prompt, int minValue, int maxValue) {
 
     printf("✖ Too many invalid attempts.\n");
     return -1; // Failed after max attempts
+}
+
+// Get valid amount (double) input with range validation and input buffer clearing
+double getValidAmount(const char *prompt, double minValue, double maxValue) {
+    char input[100];
+    double value;
+    int attempts = 0;
+    const int maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+        printf("%s", prompt);
+
+        // Read input as string first
+        if (scanf("%s", input) != 1) {
+            printf("✖ Error reading input. Please try again.\n");
+            // Clear input buffer
+            while (getchar() != '\n');
+            attempts++;
+            continue;
+        }
+
+        // Try to convert string to double
+        char *endptr;
+        value = strtod(input, &endptr);
+
+        // Check if conversion was successful (entire string was converted)
+        if (*endptr == '\0') {
+            // Check if value is in valid range
+            if (value >= minValue && value <= maxValue) {
+                return value; // Success
+            } else {
+                printf("✖ Please enter an amount between $%.2f and $%.2f.\n", minValue, maxValue);
+            }
+        } else {
+            printf("✖ Invalid input! Please enter a valid amount (e.g., 100.50).\n");
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+            printf("Attempts remaining: %d\n", maxAttempts - attempts);
+        }
+    }
+
+    printf("✖ Too many invalid attempts.\n");
+    return -1.0; // Failed after max attempts
 }
 
 // Update account information (country or phone number)
@@ -976,8 +1028,14 @@ void makeTransaction(struct User currentUser) {
     }
 
     // Amount input and validation
-    printf("\nEnter transaction amount: $");
-    scanf("%lf", &transactionAmount);
+    transactionAmount = getValidAmount("\nEnter transaction amount: $", 0.01, 999999999.99);
+    if (transactionAmount == -1.0) {
+        printf("\n✖ Failed to get valid transaction amount. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        success(currentUser);
+        return;
+    }
 
     if (!validateTransactionAmount(transactionAmount)) {
         printf("✖ Amount must be positive!\n");
