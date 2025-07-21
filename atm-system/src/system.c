@@ -133,10 +133,25 @@ noAccount:
     system("clear");
     printf("\t\t\t===== New record =====\n");
 
-    printf("\nEnter today's date(mm/dd/yyyy):");
-    scanf("%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
-    printf("\nEnter the account number:");
-    scanf("%d", &r.accountNbr);
+    // Get valid date with proper validation
+    if (!getValidDate(&r.deposit)) {
+        printf("\n✖ Failed to get valid date. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar(); // consume newline
+        getchar(); // wait for user input
+        fclose(pf);
+        success(u);
+        return;
+    }
+    r.accountNbr = getValidInteger("\nEnter the account number: ", 1, 999999999);
+    if (r.accountNbr == -1) {
+        printf("\n✖ Failed to get valid account number. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        fclose(pf);
+        success(u);
+        return;
+    }
 
     // Check if account number already exists globally (for any user)
     rewind(pf); // Reset file pointer to beginning
@@ -240,6 +255,126 @@ int isValidPhone(const char *phoneNumber) {
         }
     }
     return 1;
+}
+
+// Check if a year is a leap year
+int isLeapYear(int year) {
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+// Validate date (month, day, year)
+int isValidDate(int month, int day, int year) {
+    // Check year range (reasonable range for banking system)
+    if (year < 1900 || year > 2100) {
+        return 0;
+    }
+
+    // Check month range
+    if (month < 1 || month > 12) {
+        return 0;
+    }
+
+    // Days in each month
+    int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    // Adjust for leap year
+    if (isLeapYear(year)) {
+        daysInMonth[1] = 29;
+    }
+
+    // Check day range
+    if (day < 1 || day > daysInMonth[month - 1]) {
+        return 0;
+    }
+
+    return 1;
+}
+
+// Get valid date input with proper format validation
+int getValidDate(struct Date *date) {
+    char dateInput[20];
+    int attempts = 0;
+    const int maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+        printf("\nEnter date (mm/dd/yyyy): ");
+        scanf("%s", dateInput);
+
+        // Try to parse the date
+        int month, day, year;
+        int parsed = sscanf(dateInput, "%d/%d/%d", &month, &day, &year);
+
+        // Check if parsing was successful and format is correct
+        if (parsed == 3) {
+            // Validate the date components
+            if (isValidDate(month, day, year)) {
+                date->month = month;
+                date->day = day;
+                date->year = year;
+                return 1; // Success
+            } else {
+                printf("✖ Invalid date! Please check:\n");
+                printf("  • Month must be 1-12\n");
+                printf("  • Day must be valid for the month\n");
+                printf("  • Year must be between 1900-2100\n");
+            }
+        } else {
+            printf("✖ Invalid format! Please use mm/dd/yyyy format (e.g., 12/25/2023)\n");
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+            printf("Attempts remaining: %d\n", maxAttempts - attempts);
+        }
+    }
+
+    printf("✖ Too many invalid attempts. Please try again later.\n");
+    return 0; // Failed after max attempts
+}
+
+// Get valid integer input with range validation and input buffer clearing
+int getValidInteger(const char *prompt, int minValue, int maxValue) {
+    char input[100];
+    int value;
+    int attempts = 0;
+    const int maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+        printf("%s", prompt);
+
+        // Read input as string first
+        if (scanf("%s", input) != 1) {
+            printf("✖ Error reading input. Please try again.\n");
+            // Clear input buffer
+            while (getchar() != '\n');
+            attempts++;
+            continue;
+        }
+
+        // Try to convert string to integer
+        char *endptr;
+        value = strtol(input, &endptr, 10);
+
+        // Check if conversion was successful (entire string was converted)
+        if (*endptr == '\0') {
+            // Check if value is in valid range
+            if (value >= minValue && value <= maxValue) {
+                return value; // Success
+            } else {
+                printf("✖ Please enter a number between %d and %d.\n", minValue, maxValue);
+            }
+        } else {
+            printf("✖ Invalid input! Please enter a valid number.\n");
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+            printf("Attempts remaining: %d\n", maxAttempts - attempts);
+        }
+    }
+
+    printf("✖ Too many invalid attempts.\n");
+    return -1; // Failed after max attempts
 }
 
 // Update account information (country or phone number)

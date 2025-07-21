@@ -46,3 +46,6 @@ void makeTransaction(struct User u);
 void removeAccount(struct User u);
 void transferOwnership(struct User u);
 int isValidPhone(const char *phoneNumber);
+int isValidDate(int month, int day, int year);
+int getValidDate(struct Date *date);
+int getValidInteger(const char *prompt, int minValue, int maxValue);

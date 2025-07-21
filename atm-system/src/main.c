@@ -14,7 +14,14 @@ void mainMenu(struct User u)
     printf("\n\t\t[6]- Remove existing account\n");
     printf("\n\t\t[7]- Transfer ownership\n");
     printf("\n\t\t[8]- Exit\n");
-    scanf("%d", &option);
+
+    option = getValidInteger("\n\t\tEnter your choice (1-8): ", 1, 8);
+    if (option == -1) {
+        printf("\n✖ Too many invalid attempts. Returning to login menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        return;
+    }
 
     switch (option)
     {
@@ -42,8 +49,6 @@ void mainMenu(struct User u)
     case 8:
         exit(1);
         break;
-    default:
-        printf("Invalid operation!\n");
     }
 };
 
@@ -60,8 +65,12 @@ void initMenu(struct User *u)
         printf("\n\t\t[1]- login\n");
         printf("\n\t\t[2]- register\n");
         printf("\n\t\t[3]- exit\n");
-        printf("\n\t\tEnter your choice: ");
-        scanf("%d", &option);
+
+        option = getValidInteger("\n\t\tEnter your choice (1-3): ", 1, 3);
+        if (option == -1) {
+            printf("\n✖ Too many invalid attempts. Exiting application.\n");
+            exit(1);
+        }
         switch (option)
         {
         case 1:
@@ -85,8 +94,6 @@ void initMenu(struct User *u)
         case 3:
             exit(1);
             break;
-        default:
-            printf("Insert a valid operation!\n");
         }
     }
 };
