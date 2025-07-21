@@ -89,10 +89,16 @@ void registerMenu(char username[50], char password[50])
 
     // Check if username is unique
     if (!isUsernameUnique(username)) {
-        printf("\n✖ Username '%s' already exists! Please choose a different username.\n", username);
-        printf("Press Enter to continue...");
-        getchar(); // consume newline
+        system("clear");
+        printf("\n=============== Registration Error ===============\n\n");
+        printf("✖ Username '%s' already exists!\n\n", username);
+        printf("Please try again with a different username.\n");
+        printf("You will be returned to the main menu.\n\n");
+        printf("===============================================\n");
+        printf("\nPress Enter to continue...");
+        while (getchar() != '\n'); // consume any remaining input
         getchar(); // wait for user input
+        system("clear");
         return;
     }
 
@@ -111,8 +117,15 @@ void registerMenu(char username[50], char password[50])
     fprintf(file, "%d %s %s\n", userId, username, password);
     fclose(file);
 
-    printf("\n✔ User '%s' registered successfully with ID %d!\n", username, userId);
-    printf("Press Enter to continue...");
-    getchar(); // consume newline
+    system("clear");
+    printf("\n=============== Registration Successful ===============\n\n");
+    printf("✔ User '%s' registered successfully with ID %d!\n\n", username, userId);
+    printf("Your account has been created! You can now:\n");
+    printf("• Login with username: %s\n", username);
+    printf("• Use the password you just created\n");
+    printf("• Access all ATM features after login\n\n");
+    printf("===============================================\n");
+    printf("\nPress Enter to return to main menu...");
+    while (getchar() != '\n'); // consume any remaining input
     getchar(); // wait for user input
 }

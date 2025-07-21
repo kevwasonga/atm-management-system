@@ -51,14 +51,16 @@ void initMenu(struct User *u)
 {
     int r = 0;
     int option;
-    system("clear");
-    printf("\n\n\t\t======= ATM =======\n");
-    printf("\n\t\t-->> Feel free to login / register :\n");
-    printf("\n\t\t[1]- login\n");
-    printf("\n\t\t[2]- register\n");
-    printf("\n\t\t[3]- exit\n");
+
     while (!r)
     {
+        system("clear");
+        printf("\n\n\t\t======= ATM =======\n");
+        printf("\n\t\t-->> Feel free to login / register :\n");
+        printf("\n\t\t[1]- login\n");
+        printf("\n\t\t[2]- register\n");
+        printf("\n\t\t[3]- exit\n");
+        printf("\n\t\tEnter your choice: ");
         scanf("%d", &option);
         switch (option)
         {
@@ -77,15 +79,8 @@ void initMenu(struct User *u)
             break;
         case 2:
             registerMenu(u->name, u->password);
-            // After registration, we don't automatically log in
-            // User needs to login with their new credentials
-            printf("\n\nRegistration successful! Please login with your credentials.\n");
-            printf("Press Enter to continue...");
-            getchar(); // consume newline
-            getchar(); // wait for user input
-            system("clear");
-            initMenu(u); // Restart the init menu to allow login
-            return; // Return to avoid calling mainMenu twice
+            // After registration, provide clear navigation options
+            r = 0; // Reset to continue the loop and show menu again
             break;
         case 3:
             exit(1);
