@@ -165,8 +165,15 @@ noAccount:
     }
     printf("\nEnter the country:");
     scanf("%s", r.country);
-    printf("\nEnter the phone number:");
-    scanf("%d", &r.phone);
+    r.phone = getValidInteger("\nEnter the phone number: ", 1000000, 999999999);
+    if (r.phone == -1) {
+        printf("\n✖ Failed to get valid phone number. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        fclose(pf);
+        success(u);
+        return;
+    }
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
 
@@ -177,8 +184,15 @@ noAccount:
     printf("\t[3] -> fixed01 (for 1 year)\n");
     printf("\t[4] -> fixed02 (for 2 years)\n");
     printf("\t[5] -> fixed03 (for 3 years)\n");
-    printf("\n\tEnter your choice (1-5): ");
-    scanf("%d", &accountTypeChoice);
+    accountTypeChoice = getValidInteger("\n\tEnter your choice (1-5): ", 1, 5);
+    if (accountTypeChoice == -1) {
+        printf("\n✖ Failed to get valid account type. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        fclose(pf);
+        success(u);
+        return;
+    }
 
     // Convert choice to account type string
     switch(accountTypeChoice) {
@@ -402,8 +416,14 @@ void updateAccountInfo(struct User currentUser) {
         fclose(displayFile);
     }
 
-    printf("\nEnter the account number you want to update: ");
-    scanf("%d", &accountNumber);
+    accountNumber = getValidInteger("\nEnter the account number you want to update: ", 1, 999999999);
+    if (accountNumber == -1) {
+        printf("\n✖ Failed to get valid account number. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        success(currentUser);
+        return;
+    }
 
     // Check if account exists and belongs to user
     FILE *checkFile = fopen(RECORDS, "r");
@@ -430,8 +450,14 @@ void updateAccountInfo(struct User currentUser) {
     printf("\nWhat would you like to update?\n");
     printf("[1] Country\n");
     printf("[2] Phone Number\n");
-    printf("Enter your choice: ");
-    scanf("%d", &fieldChoice);
+    fieldChoice = getValidInteger("Enter your choice (1-2): ", 1, 2);
+    if (fieldChoice == -1) {
+        printf("\n✖ Failed to get valid choice. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        success(currentUser);
+        return;
+    }
 
     if (fieldChoice == 1) {
         printf("Enter new country: ");
@@ -630,8 +656,14 @@ void removeAccount(struct User currentUser) {
         fclose(displayFile);
     }
 
-    printf("\nEnter the account number you want to remove: ");
-    scanf("%d", &accountNumber);
+    accountNumber = getValidInteger("\nEnter the account number you want to remove: ", 1, 999999999);
+    if (accountNumber == -1) {
+        printf("\n✖ Failed to get valid account number. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        success(currentUser);
+        return;
+    }
 
     // Find and validate the account
     FILE *checkFile = fopen(RECORDS, "r");
@@ -731,8 +763,14 @@ void checkAccountDetails(struct User currentUser) {
         fclose(displayFile);
     }
 
-    printf("\nEnter the account number you want to check: ");
-    scanf("%d", &accountNumber);
+    accountNumber = getValidInteger("\nEnter the account number you want to check: ", 1, 999999999);
+    if (accountNumber == -1) {
+        printf("\n✖ Failed to get valid account number. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        success(currentUser);
+        return;
+    }
 
     // Find and validate the account
     FILE *checkFile = fopen(RECORDS, "r");
@@ -873,8 +911,14 @@ void makeTransaction(struct User currentUser) {
         fclose(displayFile);
     }
 
-    printf("\nEnter the account number for transaction: ");
-    scanf("%d", &accountNumber);
+    accountNumber = getValidInteger("\nEnter the account number for transaction: ", 1, 999999999);
+    if (accountNumber == -1) {
+        printf("\n✖ Failed to get valid account number. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        success(currentUser);
+        return;
+    }
 
     // Find and validate the account
     FILE *checkFile = fopen(RECORDS, "r");
@@ -911,8 +955,14 @@ void makeTransaction(struct User currentUser) {
     printf("[1] Deposit\n");
     printf("[2] Withdrawal\n");
     printf("[3] Return to main menu\n");
-    printf("Enter your choice: ");
-    scanf("%d", &transactionType);
+    transactionType = getValidInteger("Enter your choice (1-3): ", 1, 3);
+    if (transactionType == -1) {
+        printf("\n✖ Failed to get valid choice. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        success(currentUser);
+        return;
+    }
 
     if (transactionType == 3) {
         mainMenu(currentUser);
@@ -1132,8 +1182,14 @@ void transferOwnership(struct User currentUser) {
         fclose(displayFile);
     }
 
-    printf("\nEnter the account number you want to transfer: ");
-    scanf("%d", &accountNumber);
+    accountNumber = getValidInteger("\nEnter the account number you want to transfer: ", 1, 999999999);
+    if (accountNumber == -1) {
+        printf("\n✖ Failed to get valid account number. Returning to main menu.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        success(currentUser);
+        return;
+    }
 
     // Find and validate the account
     FILE *checkFile = fopen(RECORDS, "r");
