@@ -14,6 +14,9 @@ test_execution_report.txt
 final_validation_report.txt
 complete_procedural_tests.txt
 review_validation_summary.txt
+hidden_edge_case_tests.txt
+automated_validation_tests.txt
+security_penetration_tests.txt
 
 # Data files (staging/development data - should not be committed)
 data/users.txt
